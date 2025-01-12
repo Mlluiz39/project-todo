@@ -9,13 +9,34 @@ export const getAllTodos = async (
 ): Promise<void> => {
   try {
     const todos = await prisma.todo.findMany({
-      where: {  },
       orderBy: { createdAt: 'desc' },
     })
     res.json(todos)
   } catch (error) {
     res.status(500).json({
       message: 'Error fetching todos',
+      error: (error as Error).message,
+    })
+  }
+}
+
+export const getIdTodo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params
+
+    const todo = await prisma.todo.findUnique({
+      where: { id: parseInt(id, 10) },
+    })
+
+    if (!todo) {
+      res.status(404).json({ message: 'Todo not found' })
+      return
+    }
+
+    res.json(todo)
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error finding todo',
       error: (error as Error).message,
     })
   }
@@ -30,7 +51,8 @@ export const createTodo = async (
       title,
       description,
       userId,
-    }: { title: string; description: string; userId: number } = req.body
+      completed = false, // Default to false if not provided
+    }: { title: string; description: string; userId: number; completed?: boolean } = req.body
 
     if (!title || !description || !userId) {
       res.status(400).json({
@@ -44,6 +66,7 @@ export const createTodo = async (
         title,
         description,
         userId,
+        completed, // Include completed status
       },
     })
 
@@ -62,7 +85,7 @@ export const updateTodo = async (
 ): Promise<void> => {
   try {
     const { id } = req.params
-    const { title, completed }: { title?: string; completed?: boolean } =
+    const { title, description, completed }: { title?: string; description?: string; completed?: boolean } =
       req.body
 
     const todo = await prisma.todo.findUnique({
@@ -76,13 +99,49 @@ export const updateTodo = async (
 
     const updatedTodo = await prisma.todo.update({
       where: { id: parseInt(id, 10) },
-      data: { title, completed },
+      data: {
+        title: title ?? todo.title, // Keep the existing title if not updated
+        description: description ?? todo.description, // Keep the existing description if not updated
+        completed: completed ?? todo.completed, // Update completed status if provided, otherwise keep the current status
+      },
     })
 
     res.json(updatedTodo)
   } catch (error) {
     res.status(500).json({
       message: 'Error updating todo',
+      error: (error as Error).message,
+    })
+  }
+}
+
+export const toggleCompleted = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params
+
+    const todo = await prisma.todo.findUnique({
+      where: { id: parseInt(id, 10) },
+    })
+
+    if (!todo) {
+      res.status(404).json({ message: 'Todo not found' })
+      return
+    }
+
+    const updatedTodo = await prisma.todo.update({
+      where: { id: parseInt(id, 10) },
+      data: {
+        completed: !todo.completed, // Toggle the current status of 'completed'
+      },
+    })
+
+    res.json(updatedTodo)
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error toggling completed status',
       error: (error as Error).message,
     })
   }
@@ -99,7 +158,7 @@ export const deleteTodo = async (
       where: { id: parseInt(id, 10) },
     })
 
-    if (!todo || todo.userId !== parseInt(req.params.userId, 10)) {
+    if (!todo) {
       res.status(404).json({ message: 'Todo not found' })
       return
     }
@@ -108,7 +167,7 @@ export const deleteTodo = async (
       where: { id: parseInt(id, 10) },
     })
 
-    res.status(204).send()
+    res.status(200).json({ message: 'Tarefa excluída com sucesso!' })
   } catch (error) {
     res.status(500).json({
       message: 'Error deleting todo',
@@ -121,5 +180,6 @@ export default {
   getAllTodos,
   createTodo,
   updateTodo,
+  toggleCompleted, // Export the new toggleCompleted function
   deleteTodo,
 }
