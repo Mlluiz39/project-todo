@@ -1,12 +1,14 @@
-const express = require('express')
-const router = express.Router()
-const authMiddleware = require('../middleware/auth.middleware')
-const {
+import express from 'express'
+
+import { authMiddleware } from '../middleware/auth.middleware'
+import {
   getAllTodos,
   createTodo,
   updateTodo,
   deleteTodo,
-} = require('../controllers/todo.controller')
+} from '../controllers/todo.controller'
+
+const router = express.Router()
 
 router.use(authMiddleware)
 
@@ -15,4 +17,4 @@ router.post('/', createTodo)
 router.put('/:id', updateTodo)
 router.delete('/:id', deleteTodo)
 
-module.exports = router
+export default router
