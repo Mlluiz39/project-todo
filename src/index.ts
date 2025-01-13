@@ -15,6 +15,11 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Hello World!!!')
 })
 
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    next()
+  })
 app.use('/auth', authRoutes)
 app.use('/todos', todoRoutes)
 
